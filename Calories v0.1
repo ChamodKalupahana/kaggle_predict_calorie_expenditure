@@ -1,1 +1,1197 @@
-{"metadata":{"kernelspec":{"language":"python","display_name":"Python 3","name":"python3"},"language_info":{"name":"python","version":"3.11.11","mimetype":"text/x-python","codemirror_mode":{"name":"ipython","version":3},"pygments_lexer":"ipython3","nbconvert_exporter":"python","file_extension":".py"},"kaggle":{"accelerator":"none","dataSources":[{"sourceId":91716,"databundleVersionId":11893428,"sourceType":"competition"}],"dockerImageVersionId":31012,"isInternetEnabled":true,"language":"python","sourceType":"notebook","isGpuEnabled":false}},"nbformat_minor":4,"nbformat":4,"cells":[{"cell_type":"code","source":"# This Python 3 environment comes with many helpful analytics libraries installed\n# It is defined by the kaggle/python Docker image: https://github.com/kaggle/docker-python\n# For example, here's several helpful packages to load\n\nimport numpy as np # linear algebra\nimport pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)\nimport tensorflow as tf\nfrom tensorflow import keras\n\n# Input data files are available in the read-only \"../input/\" directory\n# For example, running this (by clicking run or pressing Shift+Enter) will list all files under the input directory\n\nimport os\nfor dirname, _, filenames in os.walk('/kaggle/input'):\n    for filename in filenames:\n        print(os.path.join(dirname, filename))\n\n# You can write up to 20GB to the current directory (/kaggle/working/) that gets preserved as output when you create a version using \"Save & Run All\" \n# You can also write temporary files to /kaggle/temp/, but they won't be saved outside of the current session","metadata":{"_uuid":"8f2839f25d086af736a60e9eeb907d3b93b6e0e5","_cell_guid":"b1076dfc-b9ad-4769-8c92-a6c4dae69d19","trusted":true,"execution":{"iopub.status.busy":"2025-05-15T11:01:40.421526Z","iopub.execute_input":"2025-05-15T11:01:40.421933Z","iopub.status.idle":"2025-05-15T11:01:40.430009Z","shell.execute_reply.started":"2025-05-15T11:01:40.421902Z","shell.execute_reply":"2025-05-15T11:01:40.429034Z"}},"outputs":[{"name":"stdout","text":"/kaggle/input/playground-series-s5e5/sample_submission.csv\n/kaggle/input/playground-series-s5e5/train.csv\n/kaggle/input/playground-series-s5e5/test.csv\n","output_type":"stream"}],"execution_count":82},{"cell_type":"code","source":"# read csv\n\ntrain_file_path = \"/kaggle/input/playground-series-s5e5/train.csv\"\ntest_file_path = \"/kaggle/input/playground-series-s5e5/test.csv\"\nsample_subbission_file_path = \"/kaggle/input/playground-series-s5e5/sample_submission.csv\"\n\n\ntrain_dataset = pd.read_csv(train_file_path)\ntest_dataset = pd.read_csv(test_file_path)\nsample_submission = pd.read_csv(sample_subbission_file_path)","metadata":{"trusted":true,"execution":{"iopub.status.busy":"2025-05-15T11:01:40.431603Z","iopub.execute_input":"2025-05-15T11:01:40.431915Z","iopub.status.idle":"2025-05-15T11:01:41.289990Z","shell.execute_reply.started":"2025-05-15T11:01:40.431891Z","shell.execute_reply":"2025-05-15T11:01:41.288680Z"}},"outputs":[],"execution_count":83},{"cell_type":"code","source":"print(\"train dataset head \\n \\n\" , train_dataset.head(10), \"\\n\")\n\nprint(\"train dataset head \\n \\n\" , train_dataset.shape, \"\\n\")\n\nprint(\"train dataset info \\n\" , train_dataset.info(), \" \\n\")\n\nprint(\"\\n\")\nprint(train_dataset.sort_values(by=['Calories']))\nprint(\"\\n\")\n\nsample_submission.head()\n","metadata":{"trusted":true,"execution":{"iopub.status.busy":"2025-05-15T11:01:41.291905Z","iopub.execute_input":"2025-05-15T11:01:41.292288Z","iopub.status.idle":"2025-05-15T11:01:41.606369Z","shell.execute_reply.started":"2025-05-15T11:01:41.292230Z","shell.execute_reply":"2025-05-15T11:01:41.604352Z"}},"outputs":[{"name":"stdout","text":"train dataset head \n \n    id     Sex  Age  Height  Weight  Duration  Heart_Rate  Body_Temp  Calories\n0   0    male   36   189.0    82.0      26.0       101.0       41.0     150.0\n1   1  female   64   163.0    60.0       8.0        85.0       39.7      34.0\n2   2  female   51   161.0    64.0       7.0        84.0       39.8      29.0\n3   3    male   20   192.0    90.0      25.0       105.0       40.7     140.0\n4   4  female   38   166.0    61.0      25.0       102.0       40.6     146.0\n5   5  female   26   156.0    56.0      19.0       100.0       40.5     103.0\n6   6  female   21   172.0    73.0       3.0        81.0       38.3       9.0\n7   7    male   46   188.0    94.0      23.0       100.0       40.8     145.0\n8   8  female   33   166.0    63.0      25.0       107.0       40.5     161.0\n9   9    male   65   185.0    88.0      23.0       104.0       41.0     185.0 \n\ntrain dataset head \n \n (750000, 9) \n\n<class 'pandas.core.frame.DataFrame'>\nRangeIndex: 750000 entries, 0 to 749999\nData columns (total 9 columns):\n #   Column      Non-Null Count   Dtype  \n---  ------      --------------   -----  \n 0   id          750000 non-null  int64  \n 1   Sex         750000 non-null  object \n 2   Age         750000 non-null  int64  \n 3   Height      750000 non-null  float64\n 4   Weight      750000 non-null  float64\n 5   Duration    750000 non-null  float64\n 6   Heart_Rate  750000 non-null  float64\n 7   Body_Temp   750000 non-null  float64\n 8   Calories    750000 non-null  float64\ndtypes: float64(6), int64(2), object(1)\nmemory usage: 51.5+ MB\ntrain dataset info \n None  \n\n\n\n            id   Sex  Age  Height  Weight  Duration  Heart_Rate  Body_Temp  \\\n149907  149907  male   20   173.0    72.0       1.0        72.0       37.9   \n305204  305204  male   20   183.0    78.0       1.0        76.0       37.7   \n675677  675677  male   25   183.0    79.0       1.0        78.0       37.7   \n449312  449312  male   21   183.0    81.0       1.0        75.0       37.8   \n256166  256166  male   24   187.0    81.0       1.0        76.0       37.7   \n...        ...   ...  ...     ...     ...       ...         ...        ...   \n68802    68802  male   29   202.0    99.0      29.0       120.0       40.7   \n460611  460611  male   76   199.0    98.0      29.0       123.0       40.8   \n530685  530685  male   75   199.0   103.0      30.0       123.0       40.5   \n184638  184638  male   79   188.0    90.0      28.0       123.0       41.0   \n427712  427712  male   69   201.0    99.0      29.0       111.0       41.1   \n\n        Calories  \n149907       1.0  \n305204       1.0  \n675677       1.0  \n449312       1.0  \n256166       1.0  \n...          ...  \n68802      314.0  \n460611     314.0  \n530685     314.0  \n184638     314.0  \n427712     314.0  \n\n[750000 rows x 9 columns]\n\n\n","output_type":"stream"},{"execution_count":84,"output_type":"execute_result","data":{"text/plain":"       id  Calories\n0  750000    88.283\n1  750001    88.283\n2  750002    88.283\n3  750003    88.283\n4  750004    88.283","text/html":"<div>\n<style scoped>\n    .dataframe tbody tr th:only-of-type {\n        vertical-align: middle;\n    }\n\n    .dataframe tbody tr th {\n        vertical-align: top;\n    }\n\n    .dataframe thead th {\n        text-align: right;\n    }\n</style>\n<table border=\"1\" class=\"dataframe\">\n  <thead>\n    <tr style=\"text-align: right;\">\n      <th></th>\n      <th>id</th>\n      <th>Calories</th>\n    </tr>\n  </thead>\n  <tbody>\n    <tr>\n      <th>0</th>\n      <td>750000</td>\n      <td>88.283</td>\n    </tr>\n    <tr>\n      <th>1</th>\n      <td>750001</td>\n      <td>88.283</td>\n    </tr>\n    <tr>\n      <th>2</th>\n      <td>750002</td>\n      <td>88.283</td>\n    </tr>\n    <tr>\n      <th>3</th>\n      <td>750003</td>\n      <td>88.283</td>\n    </tr>\n    <tr>\n      <th>4</th>\n      <td>750004</td>\n      <td>88.283</td>\n    </tr>\n  </tbody>\n</table>\n</div>"},"metadata":{}}],"execution_count":84},{"cell_type":"markdown","source":"### Prepare the dataset\n\n- hot encode sex to be 1 or 0 (1 if male)\n- pop the id column","metadata":{}},{"cell_type":"code","source":"def hot_encode_sex(dataset):\n    dataset[\"Sex\"] = dataset[\"Sex\"] == \"male\"\n    dataset[\"Sex\"] = (dataset[\"Sex\"]).astype('int64')\n    return dataset\n\ndef pop_id(dataset):\n    dataset.pop(\"id\")\n    return dataset\n\n\ndef prepare_dataset(dataset):\n    hot_encode_sex(dataset)\n    pop_id(dataset)\n    return dataset\n\nprepare_dataset(train_dataset)\nhot_encode_sex(test_dataset)","metadata":{"trusted":true,"execution":{"iopub.status.busy":"2025-05-15T11:01:41.607375Z","iopub.execute_input":"2025-05-15T11:01:41.607731Z","iopub.status.idle":"2025-05-15T11:01:41.724902Z","shell.execute_reply.started":"2025-05-15T11:01:41.607698Z","shell.execute_reply":"2025-05-15T11:01:41.723575Z"}},"outputs":[{"execution_count":85,"output_type":"execute_result","data":{"text/plain":"            id  Sex  Age  Height  Weight  Duration  Heart_Rate  Body_Temp\n0       750000    1   45   177.0    81.0       7.0        87.0       39.8\n1       750001    1   26   200.0    97.0      20.0       101.0       40.5\n2       750002    0   29   188.0    85.0      16.0       102.0       40.4\n3       750003    0   39   172.0    73.0      20.0       107.0       40.6\n4       750004    0   30   173.0    67.0      16.0        94.0       40.5\n...        ...  ...  ...     ...     ...       ...         ...        ...\n249995  999995    0   56   159.0    62.0       6.0        85.0       39.4\n249996  999996    1   32   202.0   101.0       3.0        84.0       38.4\n249997  999997    0   31   164.0    64.0      14.0        98.0       40.1\n249998  999998    0   62   158.0    61.0      25.0       106.0       40.7\n249999  999999    1   31   199.0    96.0      15.0        98.0       39.9\n\n[250000 rows x 8 columns]","text/html":"<div>\n<style scoped>\n    .dataframe tbody tr th:only-of-type {\n        vertical-align: middle;\n    }\n\n    .dataframe tbody tr th {\n        vertical-align: top;\n    }\n\n    .dataframe thead th {\n        text-align: right;\n    }\n</style>\n<table border=\"1\" class=\"dataframe\">\n  <thead>\n    <tr style=\"text-align: right;\">\n      <th></th>\n      <th>id</th>\n      <th>Sex</th>\n      <th>Age</th>\n      <th>Height</th>\n      <th>Weight</th>\n      <th>Duration</th>\n      <th>Heart_Rate</th>\n      <th>Body_Temp</th>\n    </tr>\n  </thead>\n  <tbody>\n    <tr>\n      <th>0</th>\n      <td>750000</td>\n      <td>1</td>\n      <td>45</td>\n      <td>177.0</td>\n      <td>81.0</td>\n      <td>7.0</td>\n      <td>87.0</td>\n      <td>39.8</td>\n    </tr>\n    <tr>\n      <th>1</th>\n      <td>750001</td>\n      <td>1</td>\n      <td>26</td>\n      <td>200.0</td>\n      <td>97.0</td>\n      <td>20.0</td>\n      <td>101.0</td>\n      <td>40.5</td>\n    </tr>\n    <tr>\n      <th>2</th>\n      <td>750002</td>\n      <td>0</td>\n      <td>29</td>\n      <td>188.0</td>\n      <td>85.0</td>\n      <td>16.0</td>\n      <td>102.0</td>\n      <td>40.4</td>\n    </tr>\n    <tr>\n      <th>3</th>\n      <td>750003</td>\n      <td>0</td>\n      <td>39</td>\n      <td>172.0</td>\n      <td>73.0</td>\n      <td>20.0</td>\n      <td>107.0</td>\n      <td>40.6</td>\n    </tr>\n    <tr>\n      <th>4</th>\n      <td>750004</td>\n      <td>0</td>\n      <td>30</td>\n      <td>173.0</td>\n      <td>67.0</td>\n      <td>16.0</td>\n      <td>94.0</td>\n      <td>40.5</td>\n    </tr>\n    <tr>\n      <th>...</th>\n      <td>...</td>\n      <td>...</td>\n      <td>...</td>\n      <td>...</td>\n      <td>...</td>\n      <td>...</td>\n      <td>...</td>\n      <td>...</td>\n    </tr>\n    <tr>\n      <th>249995</th>\n      <td>999995</td>\n      <td>0</td>\n      <td>56</td>\n      <td>159.0</td>\n      <td>62.0</td>\n      <td>6.0</td>\n      <td>85.0</td>\n      <td>39.4</td>\n    </tr>\n    <tr>\n      <th>249996</th>\n      <td>999996</td>\n      <td>1</td>\n      <td>32</td>\n      <td>202.0</td>\n      <td>101.0</td>\n      <td>3.0</td>\n      <td>84.0</td>\n      <td>38.4</td>\n    </tr>\n    <tr>\n      <th>249997</th>\n      <td>999997</td>\n      <td>0</td>\n      <td>31</td>\n      <td>164.0</td>\n      <td>64.0</td>\n      <td>14.0</td>\n      <td>98.0</td>\n      <td>40.1</td>\n    </tr>\n    <tr>\n      <th>249998</th>\n      <td>999998</td>\n      <td>0</td>\n      <td>62</td>\n      <td>158.0</td>\n      <td>61.0</td>\n      <td>25.0</td>\n      <td>106.0</td>\n      <td>40.7</td>\n    </tr>\n    <tr>\n      <th>249999</th>\n      <td>999999</td>\n      <td>1</td>\n      <td>31</td>\n      <td>199.0</td>\n      <td>96.0</td>\n      <td>15.0</td>\n      <td>98.0</td>\n      <td>39.9</td>\n    </tr>\n  </tbody>\n</table>\n<p>250000 rows × 8 columns</p>\n</div>"},"metadata":{}}],"execution_count":85},{"cell_type":"code","source":"test_id_column = test_dataset.pop(\"id\")\ntest_id_column","metadata":{"trusted":true,"execution":{"iopub.status.busy":"2025-05-15T11:01:41.727539Z","iopub.execute_input":"2025-05-15T11:01:41.727828Z","iopub.status.idle":"2025-05-15T11:01:41.739222Z","shell.execute_reply.started":"2025-05-15T11:01:41.727805Z","shell.execute_reply":"2025-05-15T11:01:41.737584Z"}},"outputs":[{"execution_count":86,"output_type":"execute_result","data":{"text/plain":"0         750000\n1         750001\n2         750002\n3         750003\n4         750004\n           ...  \n249995    999995\n249996    999996\n249997    999997\n249998    999998\n249999    999999\nName: id, Length: 250000, dtype: int64"},"metadata":{}}],"execution_count":86},{"cell_type":"markdown","source":"### Create the target dataset\n\nWith two columns, ID and Calories\n- pop calories","metadata":{}},{"cell_type":"code","source":"def create_target_dataset(calories_dataset):\n    isAppendingID = False\n    \n    calories_dataset = train_dataset.pop(\"Calories\")\n    calories_dataset = calories_dataset.to_frame()\n    # calories_dataset = calories_dataset.assign(id=train_dataset[\"id\"])\n    if (isAppendingID == True):\n        calories_dataset[\"id\"] = train_dataset[\"id\"]\n        calories_dataset = calories_dataset[[\"id\", \"Calories\"]]\n    return calories_dataset\n\ncalories_dataset = create_target_dataset(create_target_dataset)","metadata":{"trusted":true,"execution":{"iopub.status.busy":"2025-05-15T11:01:41.740345Z","iopub.execute_input":"2025-05-15T11:01:41.740669Z","iopub.status.idle":"2025-05-15T11:01:41.756768Z","shell.execute_reply.started":"2025-05-15T11:01:41.740647Z","shell.execute_reply":"2025-05-15T11:01:41.755742Z"}},"outputs":[],"execution_count":87},{"cell_type":"code","source":"calories_dataset.head()","metadata":{"trusted":true,"execution":{"iopub.status.busy":"2025-05-15T11:01:41.757808Z","iopub.execute_input":"2025-05-15T11:01:41.758160Z","iopub.status.idle":"2025-05-15T11:01:41.781701Z","shell.execute_reply.started":"2025-05-15T11:01:41.758131Z","shell.execute_reply":"2025-05-15T11:01:41.780743Z"}},"outputs":[{"execution_count":88,"output_type":"execute_result","data":{"text/plain":"   Calories\n0     150.0\n1      34.0\n2      29.0\n3     140.0\n4     146.0","text/html":"<div>\n<style scoped>\n    .dataframe tbody tr th:only-of-type {\n        vertical-align: middle;\n    }\n\n    .dataframe tbody tr th {\n        vertical-align: top;\n    }\n\n    .dataframe thead th {\n        text-align: right;\n    }\n</style>\n<table border=\"1\" class=\"dataframe\">\n  <thead>\n    <tr style=\"text-align: right;\">\n      <th></th>\n      <th>Calories</th>\n    </tr>\n  </thead>\n  <tbody>\n    <tr>\n      <th>0</th>\n      <td>150.0</td>\n    </tr>\n    <tr>\n      <th>1</th>\n      <td>34.0</td>\n    </tr>\n    <tr>\n      <th>2</th>\n      <td>29.0</td>\n    </tr>\n    <tr>\n      <th>3</th>\n      <td>140.0</td>\n    </tr>\n    <tr>\n      <th>4</th>\n      <td>146.0</td>\n    </tr>\n  </tbody>\n</table>\n</div>"},"metadata":{}}],"execution_count":88},{"cell_type":"code","source":"def get_model():\n    model = keras.Sequential([\n        keras.layers.InputLayer(shape=(7,)),\n        keras.layers.Dense(8),\n        keras.layers.Dense(4),\n        keras.layers.Dense(1),\n    ])\n    return model\n\ndnn_model = get_model()\n\nprint(dnn_model.summary())\n\ntesting = False\nepochs = 1\noptimizer = \"adam\"\nloss = keras.losses.MeanAbsoluteError()\n\ndnn_model.compile(optimizer=optimizer,\n                  loss = loss,\n                  metrics = [keras.metrics.RootMeanSquaredError]\n                 )\n\nhistory = dnn_model.fit(train_dataset, calories_dataset, epochs = epochs)","metadata":{"trusted":true,"execution":{"iopub.status.busy":"2025-05-15T11:01:41.782749Z","iopub.execute_input":"2025-05-15T11:01:41.783084Z"}},"outputs":[{"output_type":"display_data","data":{"text/plain":"\u001b[1mModel: \"sequential_4\"\u001b[0m\n","text/html":"<pre style=\"white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace\"><span style=\"font-weight: bold\">Model: \"sequential_4\"</span>\n</pre>\n"},"metadata":{}},{"output_type":"display_data","data":{"text/plain":"┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┓\n┃\u001b[1m \u001b[0m\u001b[1mLayer (type)                        \u001b[0m\u001b[1m \u001b[0m┃\u001b[1m \u001b[0m\u001b[1mOutput Shape               \u001b[0m\u001b[1m \u001b[0m┃\u001b[1m \u001b[0m\u001b[1m        Param #\u001b[0m\u001b[1m \u001b[0m┃\n┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━┩\n│ dense_12 (\u001b[38;5;33mDense\u001b[0m)                     │ (\u001b[38;5;45mNone\u001b[0m, \u001b[38;5;34m8\u001b[0m)                   │              \u001b[38;5;34m64\u001b[0m │\n├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤\n│ dense_13 (\u001b[38;5;33mDense\u001b[0m)                     │ (\u001b[38;5;45mNone\u001b[0m, \u001b[38;5;34m4\u001b[0m)                   │              \u001b[38;5;34m36\u001b[0m │\n├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤\n│ dense_14 (\u001b[38;5;33mDense\u001b[0m)                     │ (\u001b[38;5;45mNone\u001b[0m, \u001b[38;5;34m1\u001b[0m)                   │               \u001b[38;5;34m5\u001b[0m │\n└──────────────────────────────────────┴─────────────────────────────┴─────────────────┘\n","text/html":"<pre style=\"white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace\">┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┓\n┃<span style=\"font-weight: bold\"> Layer (type)                         </span>┃<span style=\"font-weight: bold\"> Output Shape                </span>┃<span style=\"font-weight: bold\">         Param # </span>┃\n┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━┩\n│ dense_12 (<span style=\"color: #0087ff; text-decoration-color: #0087ff\">Dense</span>)                     │ (<span style=\"color: #00d7ff; text-decoration-color: #00d7ff\">None</span>, <span style=\"color: #00af00; text-decoration-color: #00af00\">8</span>)                   │              <span style=\"color: #00af00; text-decoration-color: #00af00\">64</span> │\n├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤\n│ dense_13 (<span style=\"color: #0087ff; text-decoration-color: #0087ff\">Dense</span>)                     │ (<span style=\"color: #00d7ff; text-decoration-color: #00d7ff\">None</span>, <span style=\"color: #00af00; text-decoration-color: #00af00\">4</span>)                   │              <span style=\"color: #00af00; text-decoration-color: #00af00\">36</span> │\n├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤\n│ dense_14 (<span style=\"color: #0087ff; text-decoration-color: #0087ff\">Dense</span>)                     │ (<span style=\"color: #00d7ff; text-decoration-color: #00d7ff\">None</span>, <span style=\"color: #00af00; text-decoration-color: #00af00\">1</span>)                   │               <span style=\"color: #00af00; text-decoration-color: #00af00\">5</span> │\n└──────────────────────────────────────┴─────────────────────────────┴─────────────────┘\n</pre>\n"},"metadata":{}},{"output_type":"display_data","data":{"text/plain":"\u001b[1m Total params: \u001b[0m\u001b[38;5;34m105\u001b[0m (420.00 B)\n","text/html":"<pre style=\"white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace\"><span style=\"font-weight: bold\"> Total params: </span><span style=\"color: #00af00; text-decoration-color: #00af00\">105</span> (420.00 B)\n</pre>\n"},"metadata":{}},{"output_type":"display_data","data":{"text/plain":"\u001b[1m Trainable params: \u001b[0m\u001b[38;5;34m105\u001b[0m (420.00 B)\n","text/html":"<pre style=\"white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace\"><span style=\"font-weight: bold\"> Trainable params: </span><span style=\"color: #00af00; text-decoration-color: #00af00\">105</span> (420.00 B)\n</pre>\n"},"metadata":{}},{"output_type":"display_data","data":{"text/plain":"\u001b[1m Non-trainable params: \u001b[0m\u001b[38;5;34m0\u001b[0m (0.00 B)\n","text/html":"<pre style=\"white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace\"><span style=\"font-weight: bold\"> Non-trainable params: </span><span style=\"color: #00af00; text-decoration-color: #00af00\">0</span> (0.00 B)\n</pre>\n"},"metadata":{}},{"name":"stdout","text":"None\n\u001b[1m11702/23438\u001b[0m \u001b[32m━━━━━━━━━\u001b[0m\u001b[37m━━━━━━━━━━━\u001b[0m \u001b[1m18s\u001b[0m 2ms/step - loss: 13.1652 - root_mean_squared_error: 19.9865","output_type":"stream"}],"execution_count":null},{"cell_type":"code","source":"model_prediction_raw = dnn_model.predict(test_dataset)","metadata":{"trusted":true},"outputs":[],"execution_count":null},{"cell_type":"markdown","source":"### Send off submission","metadata":{}},{"cell_type":"code","source":"model_prediction = pd.DataFrame(model_prediction_raw, columns=[\"Calories\"])","metadata":{"trusted":true},"outputs":[],"execution_count":null},{"cell_type":"code","source":"model_prediction[\"id\"] = test_id_column\nmodel_prediction = model_prediction[[\"id\", \"Calories\"]]\n\nmodel_prediction\n# model_prediction.rename(columns={\"0\": \"id\", \"1 \" : \"Calories\"})","metadata":{"trusted":true},"outputs":[],"execution_count":null},{"cell_type":"code","source":"print(model_prediction[\"Calories\"] < 0).sum()\nmodel_prediction[\"Calories\"] = model_prediction[\"Calories\"].abs()\nprint(model_prediction[\"Calories\"] < 0).sum()","metadata":{"trusted":true},"outputs":[],"execution_count":null},{"cell_type":"code","source":"model_prediction.to_csv(\"submission.csv\", index=False)","metadata":{"trusted":true},"outputs":[],"execution_count":null},{"cell_type":"code","source":"","metadata":{"trusted":true},"outputs":[],"execution_count":null}]}
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "id": "ea6bc0b5",
+   "metadata": {
+    "_cell_guid": "b1076dfc-b9ad-4769-8c92-a6c4dae69d19",
+    "_uuid": "8f2839f25d086af736a60e9eeb907d3b93b6e0e5",
+    "execution": {
+     "iopub.execute_input": "2025-05-15T11:06:09.720449Z",
+     "iopub.status.busy": "2025-05-15T11:06:09.720169Z",
+     "iopub.status.idle": "2025-05-15T11:06:26.102652Z",
+     "shell.execute_reply": "2025-05-15T11:06:26.101670Z"
+    },
+    "papermill": {
+     "duration": 16.388941,
+     "end_time": "2025-05-15T11:06:26.104168",
+     "exception": false,
+     "start_time": "2025-05-15T11:06:09.715227",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "2025-05-15 11:06:13.094471: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:477] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered\n",
+      "WARNING: All log messages before absl::InitializeLog() is called are written to STDERR\n",
+      "E0000 00:00:1747307173.315669      13 cuda_dnn.cc:8310] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered\n",
+      "E0000 00:00:1747307173.377718      13 cuda_blas.cc:1418] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered\n"
+     ]
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "/kaggle/input/playground-series-s5e5/sample_submission.csv\n",
+      "/kaggle/input/playground-series-s5e5/train.csv\n",
+      "/kaggle/input/playground-series-s5e5/test.csv\n"
+     ]
+    }
+   ],
+   "source": [
+    "# This Python 3 environment comes with many helpful analytics libraries installed\n",
+    "# It is defined by the kaggle/python Docker image: https://github.com/kaggle/docker-python\n",
+    "# For example, here's several helpful packages to load\n",
+    "\n",
+    "import numpy as np # linear algebra\n",
+    "import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)\n",
+    "import tensorflow as tf\n",
+    "from tensorflow import keras\n",
+    "\n",
+    "# Input data files are available in the read-only \"../input/\" directory\n",
+    "# For example, running this (by clicking run or pressing Shift+Enter) will list all files under the input directory\n",
+    "\n",
+    "import os\n",
+    "for dirname, _, filenames in os.walk('/kaggle/input'):\n",
+    "    for filename in filenames:\n",
+    "        print(os.path.join(dirname, filename))\n",
+    "\n",
+    "# You can write up to 20GB to the current directory (/kaggle/working/) that gets preserved as output when you create a version using \"Save & Run All\" \n",
+    "# You can also write temporary files to /kaggle/temp/, but they won't be saved outside of the current session"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "id": "15b5e2df",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-05-15T11:06:26.112494Z",
+     "iopub.status.busy": "2025-05-15T11:06:26.111708Z",
+     "iopub.status.idle": "2025-05-15T11:06:27.321245Z",
+     "shell.execute_reply": "2025-05-15T11:06:27.320542Z"
+    },
+    "papermill": {
+     "duration": 1.214977,
+     "end_time": "2025-05-15T11:06:27.322828",
+     "exception": false,
+     "start_time": "2025-05-15T11:06:26.107851",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "# read csv\n",
+    "\n",
+    "train_file_path = \"/kaggle/input/playground-series-s5e5/train.csv\"\n",
+    "test_file_path = \"/kaggle/input/playground-series-s5e5/test.csv\"\n",
+    "sample_subbission_file_path = \"/kaggle/input/playground-series-s5e5/sample_submission.csv\"\n",
+    "\n",
+    "\n",
+    "train_dataset = pd.read_csv(train_file_path)\n",
+    "test_dataset = pd.read_csv(test_file_path)\n",
+    "sample_submission = pd.read_csv(sample_subbission_file_path)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "id": "110936f3",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-05-15T11:06:27.330891Z",
+     "iopub.status.busy": "2025-05-15T11:06:27.330272Z",
+     "iopub.status.idle": "2025-05-15T11:06:27.578750Z",
+     "shell.execute_reply": "2025-05-15T11:06:27.577856Z"
+    },
+    "papermill": {
+     "duration": 0.253738,
+     "end_time": "2025-05-15T11:06:27.580110",
+     "exception": false,
+     "start_time": "2025-05-15T11:06:27.326372",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "train dataset head \n",
+      " \n",
+      "    id     Sex  Age  Height  Weight  Duration  Heart_Rate  Body_Temp  Calories\n",
+      "0   0    male   36   189.0    82.0      26.0       101.0       41.0     150.0\n",
+      "1   1  female   64   163.0    60.0       8.0        85.0       39.7      34.0\n",
+      "2   2  female   51   161.0    64.0       7.0        84.0       39.8      29.0\n",
+      "3   3    male   20   192.0    90.0      25.0       105.0       40.7     140.0\n",
+      "4   4  female   38   166.0    61.0      25.0       102.0       40.6     146.0\n",
+      "5   5  female   26   156.0    56.0      19.0       100.0       40.5     103.0\n",
+      "6   6  female   21   172.0    73.0       3.0        81.0       38.3       9.0\n",
+      "7   7    male   46   188.0    94.0      23.0       100.0       40.8     145.0\n",
+      "8   8  female   33   166.0    63.0      25.0       107.0       40.5     161.0\n",
+      "9   9    male   65   185.0    88.0      23.0       104.0       41.0     185.0 \n",
+      "\n",
+      "train dataset head \n",
+      " \n",
+      " (750000, 9) \n",
+      "\n",
+      "<class 'pandas.core.frame.DataFrame'>\n",
+      "RangeIndex: 750000 entries, 0 to 749999\n",
+      "Data columns (total 9 columns):\n",
+      " #   Column      Non-Null Count   Dtype  \n",
+      "---  ------      --------------   -----  \n",
+      " 0   id          750000 non-null  int64  \n",
+      " 1   Sex         750000 non-null  object \n",
+      " 2   Age         750000 non-null  int64  \n",
+      " 3   Height      750000 non-null  float64\n",
+      " 4   Weight      750000 non-null  float64\n",
+      " 5   Duration    750000 non-null  float64\n",
+      " 6   Heart_Rate  750000 non-null  float64\n",
+      " 7   Body_Temp   750000 non-null  float64\n",
+      " 8   Calories    750000 non-null  float64\n",
+      "dtypes: float64(6), int64(2), object(1)\n",
+      "memory usage: 51.5+ MB\n",
+      "train dataset info \n",
+      " None  \n",
+      "\n",
+      "\n",
+      "\n",
+      "            id   Sex  Age  Height  Weight  Duration  Heart_Rate  Body_Temp  \\\n",
+      "149907  149907  male   20   173.0    72.0       1.0        72.0       37.9   \n",
+      "305204  305204  male   20   183.0    78.0       1.0        76.0       37.7   \n",
+      "675677  675677  male   25   183.0    79.0       1.0        78.0       37.7   \n",
+      "449312  449312  male   21   183.0    81.0       1.0        75.0       37.8   \n",
+      "256166  256166  male   24   187.0    81.0       1.0        76.0       37.7   \n",
+      "...        ...   ...  ...     ...     ...       ...         ...        ...   \n",
+      "68802    68802  male   29   202.0    99.0      29.0       120.0       40.7   \n",
+      "460611  460611  male   76   199.0    98.0      29.0       123.0       40.8   \n",
+      "530685  530685  male   75   199.0   103.0      30.0       123.0       40.5   \n",
+      "184638  184638  male   79   188.0    90.0      28.0       123.0       41.0   \n",
+      "427712  427712  male   69   201.0    99.0      29.0       111.0       41.1   \n",
+      "\n",
+      "        Calories  \n",
+      "149907       1.0  \n",
+      "305204       1.0  \n",
+      "675677       1.0  \n",
+      "449312       1.0  \n",
+      "256166       1.0  \n",
+      "...          ...  \n",
+      "68802      314.0  \n",
+      "460611     314.0  \n",
+      "530685     314.0  \n",
+      "184638     314.0  \n",
+      "427712     314.0  \n",
+      "\n",
+      "[750000 rows x 9 columns]\n",
+      "\n",
+      "\n"
+     ]
+    },
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>id</th>\n",
+       "      <th>Calories</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>750000</td>\n",
+       "      <td>88.283</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>750001</td>\n",
+       "      <td>88.283</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>750002</td>\n",
+       "      <td>88.283</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>750003</td>\n",
+       "      <td>88.283</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>750004</td>\n",
+       "      <td>88.283</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "       id  Calories\n",
+       "0  750000    88.283\n",
+       "1  750001    88.283\n",
+       "2  750002    88.283\n",
+       "3  750003    88.283\n",
+       "4  750004    88.283"
+      ]
+     },
+     "execution_count": 3,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "print(\"train dataset head \\n \\n\" , train_dataset.head(10), \"\\n\")\n",
+    "\n",
+    "print(\"train dataset head \\n \\n\" , train_dataset.shape, \"\\n\")\n",
+    "\n",
+    "print(\"train dataset info \\n\" , train_dataset.info(), \" \\n\")\n",
+    "\n",
+    "print(\"\\n\")\n",
+    "print(train_dataset.sort_values(by=['Calories']))\n",
+    "print(\"\\n\")\n",
+    "\n",
+    "sample_submission.head()\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "1ca32b6f",
+   "metadata": {
+    "papermill": {
+     "duration": 0.003137,
+     "end_time": "2025-05-15T11:06:27.586851",
+     "exception": false,
+     "start_time": "2025-05-15T11:06:27.583714",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "### Prepare the dataset\n",
+    "\n",
+    "- hot encode sex to be 1 or 0 (1 if male)\n",
+    "- pop the id column"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "id": "626491d7",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-05-15T11:06:27.595997Z",
+     "iopub.status.busy": "2025-05-15T11:06:27.595265Z",
+     "iopub.status.idle": "2025-05-15T11:06:27.694864Z",
+     "shell.execute_reply": "2025-05-15T11:06:27.694109Z"
+    },
+    "papermill": {
+     "duration": 0.104844,
+     "end_time": "2025-05-15T11:06:27.696113",
+     "exception": false,
+     "start_time": "2025-05-15T11:06:27.591269",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>id</th>\n",
+       "      <th>Sex</th>\n",
+       "      <th>Age</th>\n",
+       "      <th>Height</th>\n",
+       "      <th>Weight</th>\n",
+       "      <th>Duration</th>\n",
+       "      <th>Heart_Rate</th>\n",
+       "      <th>Body_Temp</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>750000</td>\n",
+       "      <td>1</td>\n",
+       "      <td>45</td>\n",
+       "      <td>177.0</td>\n",
+       "      <td>81.0</td>\n",
+       "      <td>7.0</td>\n",
+       "      <td>87.0</td>\n",
+       "      <td>39.8</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>750001</td>\n",
+       "      <td>1</td>\n",
+       "      <td>26</td>\n",
+       "      <td>200.0</td>\n",
+       "      <td>97.0</td>\n",
+       "      <td>20.0</td>\n",
+       "      <td>101.0</td>\n",
+       "      <td>40.5</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>750002</td>\n",
+       "      <td>0</td>\n",
+       "      <td>29</td>\n",
+       "      <td>188.0</td>\n",
+       "      <td>85.0</td>\n",
+       "      <td>16.0</td>\n",
+       "      <td>102.0</td>\n",
+       "      <td>40.4</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>750003</td>\n",
+       "      <td>0</td>\n",
+       "      <td>39</td>\n",
+       "      <td>172.0</td>\n",
+       "      <td>73.0</td>\n",
+       "      <td>20.0</td>\n",
+       "      <td>107.0</td>\n",
+       "      <td>40.6</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>750004</td>\n",
+       "      <td>0</td>\n",
+       "      <td>30</td>\n",
+       "      <td>173.0</td>\n",
+       "      <td>67.0</td>\n",
+       "      <td>16.0</td>\n",
+       "      <td>94.0</td>\n",
+       "      <td>40.5</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>...</th>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>249995</th>\n",
+       "      <td>999995</td>\n",
+       "      <td>0</td>\n",
+       "      <td>56</td>\n",
+       "      <td>159.0</td>\n",
+       "      <td>62.0</td>\n",
+       "      <td>6.0</td>\n",
+       "      <td>85.0</td>\n",
+       "      <td>39.4</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>249996</th>\n",
+       "      <td>999996</td>\n",
+       "      <td>1</td>\n",
+       "      <td>32</td>\n",
+       "      <td>202.0</td>\n",
+       "      <td>101.0</td>\n",
+       "      <td>3.0</td>\n",
+       "      <td>84.0</td>\n",
+       "      <td>38.4</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>249997</th>\n",
+       "      <td>999997</td>\n",
+       "      <td>0</td>\n",
+       "      <td>31</td>\n",
+       "      <td>164.0</td>\n",
+       "      <td>64.0</td>\n",
+       "      <td>14.0</td>\n",
+       "      <td>98.0</td>\n",
+       "      <td>40.1</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>249998</th>\n",
+       "      <td>999998</td>\n",
+       "      <td>0</td>\n",
+       "      <td>62</td>\n",
+       "      <td>158.0</td>\n",
+       "      <td>61.0</td>\n",
+       "      <td>25.0</td>\n",
+       "      <td>106.0</td>\n",
+       "      <td>40.7</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>249999</th>\n",
+       "      <td>999999</td>\n",
+       "      <td>1</td>\n",
+       "      <td>31</td>\n",
+       "      <td>199.0</td>\n",
+       "      <td>96.0</td>\n",
+       "      <td>15.0</td>\n",
+       "      <td>98.0</td>\n",
+       "      <td>39.9</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "<p>250000 rows × 8 columns</p>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "            id  Sex  Age  Height  Weight  Duration  Heart_Rate  Body_Temp\n",
+       "0       750000    1   45   177.0    81.0       7.0        87.0       39.8\n",
+       "1       750001    1   26   200.0    97.0      20.0       101.0       40.5\n",
+       "2       750002    0   29   188.0    85.0      16.0       102.0       40.4\n",
+       "3       750003    0   39   172.0    73.0      20.0       107.0       40.6\n",
+       "4       750004    0   30   173.0    67.0      16.0        94.0       40.5\n",
+       "...        ...  ...  ...     ...     ...       ...         ...        ...\n",
+       "249995  999995    0   56   159.0    62.0       6.0        85.0       39.4\n",
+       "249996  999996    1   32   202.0   101.0       3.0        84.0       38.4\n",
+       "249997  999997    0   31   164.0    64.0      14.0        98.0       40.1\n",
+       "249998  999998    0   62   158.0    61.0      25.0       106.0       40.7\n",
+       "249999  999999    1   31   199.0    96.0      15.0        98.0       39.9\n",
+       "\n",
+       "[250000 rows x 8 columns]"
+      ]
+     },
+     "execution_count": 4,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "def hot_encode_sex(dataset):\n",
+    "    dataset[\"Sex\"] = dataset[\"Sex\"] == \"male\"\n",
+    "    dataset[\"Sex\"] = (dataset[\"Sex\"]).astype('int64')\n",
+    "    return dataset\n",
+    "\n",
+    "def pop_id(dataset):\n",
+    "    dataset.pop(\"id\")\n",
+    "    return dataset\n",
+    "\n",
+    "\n",
+    "def prepare_dataset(dataset):\n",
+    "    hot_encode_sex(dataset)\n",
+    "    pop_id(dataset)\n",
+    "    return dataset\n",
+    "\n",
+    "prepare_dataset(train_dataset)\n",
+    "hot_encode_sex(test_dataset)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "id": "32f2a3ea",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-05-15T11:06:27.704803Z",
+     "iopub.status.busy": "2025-05-15T11:06:27.704284Z",
+     "iopub.status.idle": "2025-05-15T11:06:27.710997Z",
+     "shell.execute_reply": "2025-05-15T11:06:27.710214Z"
+    },
+    "papermill": {
+     "duration": 0.012166,
+     "end_time": "2025-05-15T11:06:27.712234",
+     "exception": false,
+     "start_time": "2025-05-15T11:06:27.700068",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "0         750000\n",
+       "1         750001\n",
+       "2         750002\n",
+       "3         750003\n",
+       "4         750004\n",
+       "           ...  \n",
+       "249995    999995\n",
+       "249996    999996\n",
+       "249997    999997\n",
+       "249998    999998\n",
+       "249999    999999\n",
+       "Name: id, Length: 250000, dtype: int64"
+      ]
+     },
+     "execution_count": 5,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "test_id_column = test_dataset.pop(\"id\")\n",
+    "test_id_column"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "17bbb14f",
+   "metadata": {
+    "papermill": {
+     "duration": 0.003457,
+     "end_time": "2025-05-15T11:06:27.719552",
+     "exception": false,
+     "start_time": "2025-05-15T11:06:27.716095",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "### Create the target dataset\n",
+    "\n",
+    "With two columns, ID and Calories\n",
+    "- pop calories"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "id": "7531dce5",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-05-15T11:06:27.727815Z",
+     "iopub.status.busy": "2025-05-15T11:06:27.727516Z",
+     "iopub.status.idle": "2025-05-15T11:06:27.732995Z",
+     "shell.execute_reply": "2025-05-15T11:06:27.732207Z"
+    },
+    "papermill": {
+     "duration": 0.011026,
+     "end_time": "2025-05-15T11:06:27.734244",
+     "exception": false,
+     "start_time": "2025-05-15T11:06:27.723218",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "def create_target_dataset(calories_dataset):\n",
+    "    isAppendingID = False\n",
+    "    \n",
+    "    calories_dataset = train_dataset.pop(\"Calories\")\n",
+    "    calories_dataset = calories_dataset.to_frame()\n",
+    "    # calories_dataset = calories_dataset.assign(id=train_dataset[\"id\"])\n",
+    "    if (isAppendingID == True):\n",
+    "        calories_dataset[\"id\"] = train_dataset[\"id\"]\n",
+    "        calories_dataset = calories_dataset[[\"id\", \"Calories\"]]\n",
+    "    return calories_dataset\n",
+    "\n",
+    "calories_dataset = create_target_dataset(create_target_dataset)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "id": "e4036eb2",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-05-15T11:06:27.742468Z",
+     "iopub.status.busy": "2025-05-15T11:06:27.742233Z",
+     "iopub.status.idle": "2025-05-15T11:06:27.749333Z",
+     "shell.execute_reply": "2025-05-15T11:06:27.748713Z"
+    },
+    "papermill": {
+     "duration": 0.012544,
+     "end_time": "2025-05-15T11:06:27.750517",
+     "exception": false,
+     "start_time": "2025-05-15T11:06:27.737973",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>Calories</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>150.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>34.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>29.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>140.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>146.0</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "   Calories\n",
+       "0     150.0\n",
+       "1      34.0\n",
+       "2      29.0\n",
+       "3     140.0\n",
+       "4     146.0"
+      ]
+     },
+     "execution_count": 7,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "calories_dataset.head()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 8,
+   "id": "dba91ae5",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-05-15T11:06:27.758916Z",
+     "iopub.status.busy": "2025-05-15T11:06:27.758683Z",
+     "iopub.status.idle": "2025-05-15T11:06:53.598044Z",
+     "shell.execute_reply": "2025-05-15T11:06:53.597121Z"
+    },
+    "papermill": {
+     "duration": 25.845187,
+     "end_time": "2025-05-15T11:06:53.599541",
+     "exception": false,
+     "start_time": "2025-05-15T11:06:27.754354",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "2025-05-15 11:06:27.831730: E external/local_xla/xla/stream_executor/cuda/cuda_driver.cc:152] failed call to cuInit: INTERNAL: CUDA error: Failed call to cuInit: UNKNOWN ERROR (303)\n"
+     ]
+    },
+    {
+     "data": {
+      "text/html": [
+       "<pre style=\"white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace\"><span style=\"font-weight: bold\">Model: \"sequential\"</span>\n",
+       "</pre>\n"
+      ],
+      "text/plain": [
+       "\u001b[1mModel: \"sequential\"\u001b[0m\n"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "<pre style=\"white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace\">┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┓\n",
+       "┃<span style=\"font-weight: bold\"> Layer (type)                         </span>┃<span style=\"font-weight: bold\"> Output Shape                </span>┃<span style=\"font-weight: bold\">         Param # </span>┃\n",
+       "┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━┩\n",
+       "│ dense (<span style=\"color: #0087ff; text-decoration-color: #0087ff\">Dense</span>)                        │ (<span style=\"color: #00d7ff; text-decoration-color: #00d7ff\">None</span>, <span style=\"color: #00af00; text-decoration-color: #00af00\">8</span>)                   │              <span style=\"color: #00af00; text-decoration-color: #00af00\">64</span> │\n",
+       "├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤\n",
+       "│ dense_1 (<span style=\"color: #0087ff; text-decoration-color: #0087ff\">Dense</span>)                      │ (<span style=\"color: #00d7ff; text-decoration-color: #00d7ff\">None</span>, <span style=\"color: #00af00; text-decoration-color: #00af00\">4</span>)                   │              <span style=\"color: #00af00; text-decoration-color: #00af00\">36</span> │\n",
+       "├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤\n",
+       "│ dense_2 (<span style=\"color: #0087ff; text-decoration-color: #0087ff\">Dense</span>)                      │ (<span style=\"color: #00d7ff; text-decoration-color: #00d7ff\">None</span>, <span style=\"color: #00af00; text-decoration-color: #00af00\">1</span>)                   │               <span style=\"color: #00af00; text-decoration-color: #00af00\">5</span> │\n",
+       "└──────────────────────────────────────┴─────────────────────────────┴─────────────────┘\n",
+       "</pre>\n"
+      ],
+      "text/plain": [
+       "┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┓\n",
+       "┃\u001b[1m \u001b[0m\u001b[1mLayer (type)                        \u001b[0m\u001b[1m \u001b[0m┃\u001b[1m \u001b[0m\u001b[1mOutput Shape               \u001b[0m\u001b[1m \u001b[0m┃\u001b[1m \u001b[0m\u001b[1m        Param #\u001b[0m\u001b[1m \u001b[0m┃\n",
+       "┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━┩\n",
+       "│ dense (\u001b[38;5;33mDense\u001b[0m)                        │ (\u001b[38;5;45mNone\u001b[0m, \u001b[38;5;34m8\u001b[0m)                   │              \u001b[38;5;34m64\u001b[0m │\n",
+       "├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤\n",
+       "│ dense_1 (\u001b[38;5;33mDense\u001b[0m)                      │ (\u001b[38;5;45mNone\u001b[0m, \u001b[38;5;34m4\u001b[0m)                   │              \u001b[38;5;34m36\u001b[0m │\n",
+       "├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤\n",
+       "│ dense_2 (\u001b[38;5;33mDense\u001b[0m)                      │ (\u001b[38;5;45mNone\u001b[0m, \u001b[38;5;34m1\u001b[0m)                   │               \u001b[38;5;34m5\u001b[0m │\n",
+       "└──────────────────────────────────────┴─────────────────────────────┴─────────────────┘\n"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "<pre style=\"white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace\"><span style=\"font-weight: bold\"> Total params: </span><span style=\"color: #00af00; text-decoration-color: #00af00\">105</span> (420.00 B)\n",
+       "</pre>\n"
+      ],
+      "text/plain": [
+       "\u001b[1m Total params: \u001b[0m\u001b[38;5;34m105\u001b[0m (420.00 B)\n"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "<pre style=\"white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace\"><span style=\"font-weight: bold\"> Trainable params: </span><span style=\"color: #00af00; text-decoration-color: #00af00\">105</span> (420.00 B)\n",
+       "</pre>\n"
+      ],
+      "text/plain": [
+       "\u001b[1m Trainable params: \u001b[0m\u001b[38;5;34m105\u001b[0m (420.00 B)\n"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "<pre style=\"white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace\"><span style=\"font-weight: bold\"> Non-trainable params: </span><span style=\"color: #00af00; text-decoration-color: #00af00\">0</span> (0.00 B)\n",
+       "</pre>\n"
+      ],
+      "text/plain": [
+       "\u001b[1m Non-trainable params: \u001b[0m\u001b[38;5;34m0\u001b[0m (0.00 B)\n"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "None\n",
+      "\u001b[1m23438/23438\u001b[0m \u001b[32m━━━━━━━━━━━━━━━━━━━━\u001b[0m\u001b[37m\u001b[0m \u001b[1m26s\u001b[0m 1ms/step - loss: 14.0675 - root_mean_squared_error: 22.1139\n"
+     ]
+    }
+   ],
+   "source": [
+    "def get_model():\n",
+    "    model = keras.Sequential([\n",
+    "        keras.layers.InputLayer(shape=(7,)),\n",
+    "        keras.layers.Dense(8),\n",
+    "        keras.layers.Dense(4),\n",
+    "        keras.layers.Dense(1),\n",
+    "    ])\n",
+    "    return model\n",
+    "\n",
+    "dnn_model = get_model()\n",
+    "\n",
+    "print(dnn_model.summary())\n",
+    "\n",
+    "testing = False\n",
+    "epochs = 1\n",
+    "optimizer = \"adam\"\n",
+    "loss = keras.losses.MeanAbsoluteError()\n",
+    "\n",
+    "dnn_model.compile(optimizer=optimizer,\n",
+    "                  loss = loss,\n",
+    "                  metrics = [keras.metrics.RootMeanSquaredError]\n",
+    "                 )\n",
+    "\n",
+    "history = dnn_model.fit(train_dataset, calories_dataset, epochs = epochs)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 9,
+   "id": "6faf7e52",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-05-15T11:06:53.656914Z",
+     "iopub.status.busy": "2025-05-15T11:06:53.656124Z",
+     "iopub.status.idle": "2025-05-15T11:07:03.927856Z",
+     "shell.execute_reply": "2025-05-15T11:07:03.927125Z"
+    },
+    "papermill": {
+     "duration": 10.301205,
+     "end_time": "2025-05-15T11:07:03.929368",
+     "exception": false,
+     "start_time": "2025-05-15T11:06:53.628163",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "\u001b[1m7813/7813\u001b[0m \u001b[32m━━━━━━━━━━━━━━━━━━━━\u001b[0m\u001b[37m\u001b[0m \u001b[1m7s\u001b[0m 844us/step\n"
+     ]
+    }
+   ],
+   "source": [
+    "model_prediction_raw = dnn_model.predict(test_dataset)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "9cbb1b52",
+   "metadata": {
+    "papermill": {
+     "duration": 0.032083,
+     "end_time": "2025-05-15T11:07:03.995081",
+     "exception": false,
+     "start_time": "2025-05-15T11:07:03.962998",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "### Send off submission"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 10,
+   "id": "29471c0a",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-05-15T11:07:04.061103Z",
+     "iopub.status.busy": "2025-05-15T11:07:04.060398Z",
+     "iopub.status.idle": "2025-05-15T11:07:04.064806Z",
+     "shell.execute_reply": "2025-05-15T11:07:04.064013Z"
+    },
+    "papermill": {
+     "duration": 0.038883,
+     "end_time": "2025-05-15T11:07:04.066255",
+     "exception": false,
+     "start_time": "2025-05-15T11:07:04.027372",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "model_prediction = pd.DataFrame(model_prediction_raw, columns=[\"Calories\"])"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 11,
+   "id": "83027779",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-05-15T11:07:04.193416Z",
+     "iopub.status.busy": "2025-05-15T11:07:04.193111Z",
+     "iopub.status.idle": "2025-05-15T11:07:04.205218Z",
+     "shell.execute_reply": "2025-05-15T11:07:04.204471Z"
+    },
+    "papermill": {
+     "duration": 0.105217,
+     "end_time": "2025-05-15T11:07:04.206446",
+     "exception": false,
+     "start_time": "2025-05-15T11:07:04.101229",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>id</th>\n",
+       "      <th>Calories</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>750000</td>\n",
+       "      <td>28.814974</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>750001</td>\n",
+       "      <td>117.009178</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>750002</td>\n",
+       "      <td>98.843140</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>750003</td>\n",
+       "      <td>132.530640</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>750004</td>\n",
+       "      <td>82.872276</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>...</th>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>249995</th>\n",
+       "      <td>999995</td>\n",
+       "      <td>26.385817</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>249996</th>\n",
+       "      <td>999996</td>\n",
+       "      <td>4.042799</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>249997</th>\n",
+       "      <td>999997</td>\n",
+       "      <td>80.831779</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>249998</th>\n",
+       "      <td>999998</td>\n",
+       "      <td>167.121460</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>249999</th>\n",
+       "      <td>999999</td>\n",
+       "      <td>88.603607</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "<p>250000 rows × 2 columns</p>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "            id    Calories\n",
+       "0       750000   28.814974\n",
+       "1       750001  117.009178\n",
+       "2       750002   98.843140\n",
+       "3       750003  132.530640\n",
+       "4       750004   82.872276\n",
+       "...        ...         ...\n",
+       "249995  999995   26.385817\n",
+       "249996  999996    4.042799\n",
+       "249997  999997   80.831779\n",
+       "249998  999998  167.121460\n",
+       "249999  999999   88.603607\n",
+       "\n",
+       "[250000 rows x 2 columns]"
+      ]
+     },
+     "execution_count": 11,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "model_prediction[\"id\"] = test_id_column\n",
+    "model_prediction = model_prediction[[\"id\", \"Calories\"]]\n",
+    "\n",
+    "model_prediction\n",
+    "# model_prediction.rename(columns={\"0\": \"id\", \"1 \" : \"Calories\"})"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 12,
+   "id": "5adba23d",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-05-15T11:07:04.275118Z",
+     "iopub.status.busy": "2025-05-15T11:07:04.274805Z",
+     "iopub.status.idle": "2025-05-15T11:07:04.286687Z",
+     "shell.execute_reply": "2025-05-15T11:07:04.285751Z"
+    },
+    "papermill": {
+     "duration": 0.047942,
+     "end_time": "2025-05-15T11:07:04.288010",
+     "exception": false,
+     "start_time": "2025-05-15T11:07:04.240068",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "12972\n",
+      "0\n"
+     ]
+    }
+   ],
+   "source": [
+    "print((model_prediction[\"Calories\"] < 0).sum())\n",
+    "model_prediction[\"Calories\"] = model_prediction[\"Calories\"].abs()\n",
+    "print((model_prediction[\"Calories\"] < 0).sum())"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 13,
+   "id": "168916fd",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2025-05-15T11:07:04.356655Z",
+     "iopub.status.busy": "2025-05-15T11:07:04.356330Z",
+     "iopub.status.idle": "2025-05-15T11:07:04.754841Z",
+     "shell.execute_reply": "2025-05-15T11:07:04.754134Z"
+    },
+    "papermill": {
+     "duration": 0.434486,
+     "end_time": "2025-05-15T11:07:04.756363",
+     "exception": false,
+     "start_time": "2025-05-15T11:07:04.321877",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "model_prediction.to_csv(\"submission.csv\", index=False)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "69cf5774",
+   "metadata": {
+    "papermill": {
+     "duration": 0.033039,
+     "end_time": "2025-05-15T11:07:04.822743",
+     "exception": false,
+     "start_time": "2025-05-15T11:07:04.789704",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kaggle": {
+   "accelerator": "none",
+   "dataSources": [
+    {
+     "databundleVersionId": 11893428,
+     "sourceId": 91716,
+     "sourceType": "competition"
+    }
+   ],
+   "dockerImageVersionId": 31012,
+   "isGpuEnabled": false,
+   "isInternetEnabled": true,
+   "language": "python",
+   "sourceType": "notebook"
+  },
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.11.11"
+  },
+  "papermill": {
+   "default_parameters": {},
+   "duration": 63.433668,
+   "end_time": "2025-05-15T11:07:08.424351",
+   "environment_variables": {},
+   "exception": null,
+   "input_path": "__notebook__.ipynb",
+   "output_path": "__notebook__.ipynb",
+   "parameters": {},
+   "start_time": "2025-05-15T11:06:04.990683",
+   "version": "2.6.0"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
