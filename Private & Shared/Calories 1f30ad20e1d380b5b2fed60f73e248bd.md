@@ -1,10 +1,4 @@
-# Kaggle - Predict Calorie Expenditure
-
-📅 **Last updated: 11 June 2025**
-
-Hello! This is my GitHub repo for the [Kaggle Calories Prediction Playground Competition](https://www.kaggle.com/competitions/playground-series-s3e25). The competition has now concluded, so I won't be making further updates. 
-
-However, feel free to browse through my notes and code — hope it helps!
+# Calories
 
 [Getting simple submission to work](Calories%201f30ad20e1d380b5b2fed60f73e248bd/Getting%20simple%20submission%20to%20work%201f30ad20e1d380718388c281b3fa24d4.md)
 
